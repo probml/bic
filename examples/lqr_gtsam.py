@@ -35,7 +35,7 @@ action_state_factors: List[jaxfg.core.FactorBase] = \
     [GeneralFactorAS.make(X0,
                           action_variables[0],
                           state_variables[0],
-                          LQREnv.lqr_simple_gtsm,  # define the transition function
+                          LQREnv.lqr_simple_gtsam,  # define the transition function
                           jaxfg.noises.DiagonalGaussian.make_from_covariance(cov_dyn))
      ]
 
@@ -43,7 +43,7 @@ state_action_state_factors: List[jaxfg.core.FactorBase] = \
     [GeneralFactorSAS.make(state_variables[i],
                            action_variables[i+1],
                            state_variables[i+1],
-                           LQREnv.lqr_simple_gtsm,  # define the transition function
+                           LQREnv.lqr_simple_gtsam,  # define the transition function
                            jaxfg.noises.DiagonalGaussian.make_from_covariance(cov_dyn))
      for i in range(T-1)]
 
@@ -98,7 +98,7 @@ true_xs = [X0]
 for i in range(T):
     prev_x = true_xs[-1]
     u = us[i]
-    next_x = LQREnv.lqr_simple_gtsm(prev_x, u)
+    next_x = LQREnv.lqr_simple_gtsam(prev_x, u)
     true_xs.append(next_x)
 
 

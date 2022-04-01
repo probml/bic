@@ -13,7 +13,7 @@ class LQREnv:
 
     @staticmethod
     @jax.jit
-    def lqr_simple_gtsm(s0, a0):
+    def lqr_simple_gtsam(s0, a0):
         A = jnp.array([[1.03]])  # slightly unstable system :)
         B = jnp.array([[0.03]])
         return jnp.dot(A, s0) + jnp.dot(B, a0)
