@@ -36,7 +36,7 @@ action_variables = [BoundedRealVectorVariable(min_u, max_u)[dim_u]() for _ in ra
 
 # params = jnp.load('data/pendulum_determinstic_NN_state.npy')
 config = get_config()
-workdir = 'data'
+workdir = 'data/checkpoint_31000'
 rng = jax.random.PRNGKey(0)
 state = create_train_state(rng, config)
 state = restore_checkpoint(state, workdir)
@@ -122,4 +122,4 @@ true_xs2 = [_[1] for _ in states_observed]
 us = actions_taken + [0.]
 
 PendulumMPCVis.init_plot()
-PendulumMPCVis.plot_trajectory(true_xs1, true_xs2, us, T+1) # , save_path='assets/pendulum_MPC_watson20.png')
+PendulumMPCVis.plot_trajectory(true_xs1, true_xs2, us, T+1,  save_path='assets/pendulum_MPC_funcapprox_watson20.png')
