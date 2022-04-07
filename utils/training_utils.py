@@ -13,10 +13,10 @@ import optax
 
 
 @jax.jit
-def apply_model(state, x, y, mlp):
+def apply_model(state, x, y):
   """Computes gradients, loss and accuracy for a single batch."""
   def loss_fn(params):
-    pred = mlp.apply({'params': params}, x)
+    pred = MLP([128, 64, 20, 2], 'swish').apply({'params': params}, x)
     loss = jnp.mean(optax.l2_loss(pred, y))
     return loss, pred
 
@@ -30,7 +30,7 @@ def update_model(state, grads):
   return state.apply_gradients(grads=grads)
 
 
-def train_epoch(state, train_ds, batch_size, rng, mlp):
+def train_epoch(state, train_ds, batch_size, rng):
   """Train for a single epoch."""
   train_ds_size = len(train_ds['x'])
   steps_per_epoch = train_ds_size // batch_size
@@ -44,7 +44,7 @@ def train_epoch(state, train_ds, batch_size, rng, mlp):
   for perm in perms:
     batch_x = train_ds['x'][perm, ...]
     batch_y = train_ds['y'][perm, ...]
-    grads, loss = apply_model(state, batch_x, batch_y, mlp)
+    grads, loss = apply_model(state, batch_x, batch_y)
     state = update_model(state, grads)
     epoch_loss.append(loss)
   train_loss = np.mean(epoch_loss)
@@ -57,7 +57,7 @@ def create_train_state(rng, config):
   params = mlp.init(rng, jnp.ones([1, config.input_dim]))['params']
   tx = optax.sgd(config.learning_rate, config.momentum)
   return train_state.TrainState.create(
-      apply_fn=mlp.apply, params=params, tx=tx), mlp
+      apply_fn=mlp.apply, params=params, tx=tx)
 
 
 def get_datasets(path):
@@ -87,16 +87,15 @@ def train_and_evaluate(config: ml_collections.ConfigDict,
   summary_writer.hparams(dict(config))
 
   rng, init_rng = jax.random.split(rng)
-  state, mlp = create_train_state(init_rng, config)
+  state= create_train_state(init_rng, config)
 
   for epoch in range(1, config.num_epochs + 1):
     rng, input_rng = jax.random.split(rng)
     state, train_loss = train_epoch(state, train_ds,
                                     config.batch_size,
-                                    input_rng,
-                                    mlp)
+                                    input_rng)
     _, test_loss = apply_model(state, test_ds['x'],
-                               test_ds['y'], mlp)
+                               test_ds['y'])
     # print(MLP([128, 64, 20, 2]).apply({'params': state.params}, test_ds['x']))
     # print(test_ds['y'])
     logging.info(
