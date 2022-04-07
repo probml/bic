@@ -15,7 +15,7 @@ import optax
 def apply_model(state, x, y):
   """Computes gradients, loss and accuracy for a single batch."""
   def loss_fn(params):
-    pred = MLP().apply({'params': params}, x)
+    pred = MLP([128, 64, 20, 2]).apply({'params': params}, x)
     loss = jnp.mean(optax.l2_loss(pred, y))
     return loss, pred
 
@@ -43,7 +43,7 @@ def train_epoch(state, train_ds, batch_size, rng):
   for perm in perms:
     batch_x = train_ds['x'][perm, ...]
     batch_y = train_ds['y'][perm, ...]
-    grads, loss, accuracy = apply_model(state, batch_x, batch_y)
+    grads, loss = apply_model(state, batch_x, batch_y)
     state = update_model(state, grads)
     epoch_loss.append(loss)
   train_loss = np.mean(epoch_loss)
@@ -52,7 +52,7 @@ def train_epoch(state, train_ds, batch_size, rng):
 
 def create_train_state(rng, config):
   """Creates initial `TrainState`."""
-  mlp = MLP()
+  mlp = MLP([128, 64, 20, 2])
   params = mlp.init(rng, jnp.ones([1, config.input_dim]))['params']
   tx = optax.sgd(config.learning_rate, config.momentum)
   return train_state.TrainState.create(
@@ -60,8 +60,8 @@ def create_train_state(rng, config):
 
 
 def get_datasets(path):
-  data_load = jnp.load(path)
-  data = data_load.get('arr_0').item()
+  data_load = jnp.load(path, allow_pickle=True)
+  data = data_load.item()
   train_x, train_y = data['train_x'], data['train_y']
   test_x, test_y = data['test_x'], data['test_y']
 
@@ -95,7 +95,8 @@ def train_and_evaluate(config: ml_collections.ConfigDict,
                                     input_rng)
     _, test_loss = apply_model(state, test_ds['x'],
                                test_ds['y'])
-
+    # print(MLP([128, 64, 20, 2]).apply({'params': state.params}, test_ds['x']))
+    # print(test_ds['y'])
     logging.info(
         'epoch:% 3d, train_loss: %.4f, test_loss: %.4f'
         % (epoch, train_loss, test_loss))
