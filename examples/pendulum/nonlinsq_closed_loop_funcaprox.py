@@ -38,9 +38,9 @@ action_variables = [BoundedRealVectorVariable(min_u, max_u)[dim_u]() for _ in ra
 config = get_config()
 workdir = 'data/checkpoint_31000'
 rng = jax.random.PRNGKey(0)
-state = create_train_state(rng, config)
-state = restore_checkpoint(state, workdir)
-
+ckpt = create_train_state(rng, config)
+ckpt = restore_checkpoint(ckpt, workdir)
+params = ckpt.params
 import ipdb; ipdb.set_trace()
 
 def pendulum_dynamics(state, action):
@@ -48,7 +48,7 @@ def pendulum_dynamics(state, action):
         assert len(state.shape) == len(action.shape)
         state = jnp.reshape(state, (1, -1))
         action = jnp.reshape(action, (1, -1))
-    return MLP([128, 64, 20, 2]).apply({'params': params}, jnp.concatenate([state, action], 1))
+    return MLP([128, 64, 20, 2]).apply({'params': params}, jnp.concatenate([state, action], 1)).reshape(-1)
 
 action_state_factors: List[jaxfg.core.FactorBase] = \
     [GeneralFactorAS.make(X0,
