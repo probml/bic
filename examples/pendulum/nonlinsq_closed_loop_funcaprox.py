@@ -5,7 +5,7 @@ import sys
 sys.path.append(osp.dirname(osp.dirname(osp.dirname(osp.abspath(__file__)))))
 
 from control import PriorFactor, TransformedPriorFactor, GeneralFactorSAS, GeneralFactorAS, BoundedRealVectorVariable
-# from environments.pendulum import pendulum_dynamics
+from environments.pendulum import pendulum_dynamics
 from jaxfg.core import RealVectorVariable
 from jax import numpy as jnp
 from jax import random
@@ -15,8 +15,6 @@ from models.networks import MLP
 from typing import List
 from utils.training_utils import restore_checkpoint, create_train_state
 from utils.visualization_utils import PendulumMPCVis
-
-
 
 H = 50  # how many steps we will lookahead when planning; planning_horizon
 
@@ -41,9 +39,8 @@ rng = jax.random.PRNGKey(0)
 ckpt = create_train_state(rng, config)
 ckpt = restore_checkpoint(ckpt, workdir)
 params = ckpt.params
-import ipdb; ipdb.set_trace()
 
-def pendulum_dynamics(state, action):
+def pendulum_dynamics_learned(state, action):
     if len(state.shape) == 1:
         assert len(state.shape) == len(action.shape)
         state = jnp.reshape(state, (1, -1))
@@ -54,14 +51,14 @@ action_state_factors: List[jaxfg.core.FactorBase] = \
     [GeneralFactorAS.make(X0,
                           action_variables[0],
                           state_variables[0],
-                          pendulum_dynamics,
+                          pendulum_dynamics_learned,
                           jaxfg.noises.Gaussian.make_from_covariance(cov_dyn))]
 
 state_action_state_factors: List[jaxfg.core.FactorBase] = \
     [GeneralFactorSAS.make(state_variables[i],
                            action_variables[i+1],
                            state_variables[i+1],
-                           pendulum_dynamics,
+                           pendulum_dynamics_learned,
                            jaxfg.noises.Gaussian.make_from_covariance(cov_dyn))
      for i in range(H-1)]
 
