@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from typing import List
 from utils.visualization_utils import PendulumMPCVis
 
-H = 50  # how many steps we will lookahead when planning; planning_horizon
+H = 15  # how many steps we will lookahead when planning; planning_horizon
 
 dim_x = 2
 dim_u = 1
@@ -24,8 +24,8 @@ Q_inv = jnp.diag(jnp.array([100, 1., 100]))  # covariance of transformed state
 R_inv = jnp.diag(jnp.array([50.]))  # covariance of action
 cov_dyn = jnp.array([[1e-6, 0.], [0., 1e-6]])  # covariance of state transition; small value means deterministic
 T = 100  # horizon
-max_u = 2
-min_u = -2
+max_u = 5
+min_u = -5
 
 key = random.PRNGKey(42)
 
