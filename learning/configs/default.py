@@ -21,10 +21,10 @@ def get_config():
   """Get the default hyperparameter configuration."""
   config = ml_collections.ConfigDict()
 
-  config.learning_rate = 0.003
+  config.learning_rate = 0.01
   config.momentum = 0.9
   config.batch_size = 128
   config.num_epochs = 500
-  config.data_path = 'data/pendulum_determinstic_dataset.npy'
+  config.data_path = 'data/pendulum_determinstic_uniform_dataset-20000.npy'
   config.input_dim = 3
   return config
