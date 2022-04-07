@@ -10,7 +10,10 @@ def pendulum_dynamics(state: jnp.ndarray,
     d = 1e-2  # damping
     g = 9.80665
     u_mx = 5.
-    if len(state.shape) == 1:
+
+    batch_mode = len(state.shape) ==2
+
+    if not batch_mode:
         assert len(state.shape) == len(action.shape)
         state = jnp.reshape(state, (1, -1))
         action = jnp.reshape(action, (1, -1))
@@ -23,7 +26,10 @@ def pendulum_dynamics(state: jnp.ndarray,
     x_dot = x[:, 1] + th_dot_dot * dt
     x_pos = x[:, 0] + x_dot * dt
     x2 = jnp.vstack((x_pos, x_dot)).T
-    return x2.reshape(-1)
+    if not batch_mode:
+        return x2.reshape(-1)
+    else:
+        return x2
 
 
 if __name__ == "__main__":

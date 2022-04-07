@@ -27,6 +27,7 @@ if __name__ == '__main__':
     Xs = jnp.concatenate([states, actions], 1)
 
     Ys = pendulum_dynamics(states, actions)
+    # import ipdb; ipdb.set_trace()
 
     train_X, train_Y, test_X, test_Y = make_train_test_split(Xs, Ys, 0.2)
 
