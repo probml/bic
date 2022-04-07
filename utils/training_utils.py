@@ -13,10 +13,10 @@ import optax
 
 
 @jax.jit
-def apply_model(state, x, y):
+def apply_model(state, x, y, config):
   """Computes gradients, loss and accuracy for a single batch."""
   def loss_fn(params):
-    pred = MLP([128, 64, 20, 2]).apply({'params': params}, x)
+    pred = MLP(config.fc_dims, config.activation).apply({'params': params}, x)
     loss = jnp.mean(optax.l2_loss(pred, y))
     return loss, pred
 
@@ -30,7 +30,7 @@ def update_model(state, grads):
   return state.apply_gradients(grads=grads)
 
 
-def train_epoch(state, train_ds, batch_size, rng):
+def train_epoch(state, train_ds, batch_size, rng, config):
   """Train for a single epoch."""
   train_ds_size = len(train_ds['x'])
   steps_per_epoch = train_ds_size // batch_size
@@ -44,7 +44,7 @@ def train_epoch(state, train_ds, batch_size, rng):
   for perm in perms:
     batch_x = train_ds['x'][perm, ...]
     batch_y = train_ds['y'][perm, ...]
-    grads, loss = apply_model(state, batch_x, batch_y)
+    grads, loss = apply_model(state, batch_x, batch_y, config)
     state = update_model(state, grads)
     epoch_loss.append(loss)
   train_loss = np.mean(epoch_loss)
@@ -53,7 +53,7 @@ def train_epoch(state, train_ds, batch_size, rng):
 
 def create_train_state(rng, config):
   """Creates initial `TrainState`."""
-  mlp = MLP([128, 64, 20, 2])
+  mlp = MLP([128, 64, 20, 2], config.activation)
   params = mlp.init(rng, jnp.ones([1, config.input_dim]))['params']
   tx = optax.sgd(config.learning_rate, config.momentum)
   return train_state.TrainState.create(
@@ -93,9 +93,10 @@ def train_and_evaluate(config: ml_collections.ConfigDict,
     rng, input_rng = jax.random.split(rng)
     state, train_loss = train_epoch(state, train_ds,
                                     config.batch_size,
-                                    input_rng)
+                                    input_rng,
+                                    config)
     _, test_loss = apply_model(state, test_ds['x'],
-                               test_ds['y'])
+                               test_ds['y'], config)
     # print(MLP([128, 64, 20, 2]).apply({'params': state.params}, test_ds['x']))
     # print(test_ds['y'])
     logging.info(

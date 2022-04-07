@@ -45,7 +45,7 @@ def pendulum_dynamics_learned(state, action):
         assert len(state.shape) == len(action.shape)
         state = jnp.reshape(state, (1, -1))
         action = jnp.reshape(action, (1, -1))
-    return MLP([128, 64, 20, 2]).apply({'params': params}, jnp.concatenate([state, action], 1)).reshape(-1)
+    return MLP(config.fc_dims, config.activation).apply({'params': params}, jnp.concatenate([state, action], 1)).reshape(-1)
 
 action_state_factors: List[jaxfg.core.FactorBase] = \
     [GeneralFactorAS.make(X0,

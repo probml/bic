@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """Default Hyperparameter configuration."""
-
+import flax.linen as nn
 import ml_collections
 
 
@@ -27,4 +27,6 @@ def get_config():
   config.num_epochs = 500
   config.data_path = 'data/pendulum_determinstic_uniform_dataset-20000.npy'
   config.input_dim = 3
+  config.activation = nn.swish
+  config.fc_dims = [128, 64, 20, 2]
   return config
