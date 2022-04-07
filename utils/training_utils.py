@@ -104,7 +104,7 @@ def train_and_evaluate(config: ml_collections.ConfigDict,
 
     summary_writer.scalar('train_loss', train_loss, epoch)
     summary_writer.scalar('test_loss', test_loss, epoch)
-  save_checkpoint(config.state, workdir)
+  save_checkpoint(state, workdir)
   summary_writer.flush()
   return state
 
@@ -116,6 +116,6 @@ def restore_checkpoint(state, workdir):
 def save_checkpoint(state, workdir):
   if jax.process_index() == 0:
     # get train state from the first replica
-    state = jax.device_get(jax.tree_map(lambda x: x[0], state))
+    # state = jax.device_get(jax.tree_map(lambda x: x[0], state))
     step = int(state.step)
     checkpoints.save_checkpoint(workdir, state, step, keep=3)
