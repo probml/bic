@@ -9,7 +9,7 @@ def pendulum_dynamics(state: jnp.ndarray,
     l = 1.0
     d = 1e-2  # damping
     g = 9.80665
-    u_mx = 2.0
+    u_mx = 4.
     if len(state.shape) == 1:
         assert len(state.shape) == len(action.shape)
         state = jnp.reshape(state, (1, -1))

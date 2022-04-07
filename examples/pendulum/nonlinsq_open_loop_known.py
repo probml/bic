@@ -1,31 +1,27 @@
 import sys
 import os.path as osp
-sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
+sys.path.append(osp.dirname(osp.dirname(osp.dirname(osp.abspath(__file__)))))
 
-from control import PriorFactor, GeneralFactorSAS, GeneralFactorAS
-from environments.lqr_simple import LQREnv
+from control import PriorFactor, TransformedPriorFactor, GeneralFactorSAS, GeneralFactorAS
 from jax import numpy as jnp
 import jaxfg
-from jaxfg.core import RealVectorVariable
 from jaxfg.solvers import LevenbergMarquardtSolver
+from jaxfg.core import RealVectorVariable
+from environments.pendulum import pendulum_dynamics
+import matplotlib.pyplot as plt
 from typing import List
-from utils.visualization_utils import LQRVisWatson
+from utils.visualization_utils import PendulumVis
 
 
-# define the configurations of the environment
 dim_x = 2
 dim_u = 1
+X0 = jnp.array([jnp.pi, 0.0])   # [\theta, \dot{\theta}]
+Xag = jnp.array([0., 1., 0.])   # goal state [sin(\theta), cos(\theta), \dot{\theta}]
+Q_inv = jnp.diag(jnp.array([100, 1, 100]))  # covariance of transformed state
+R_inv = jnp.diag(jnp.array([50]))  # covariance of action
+cov_dyn = jnp.array([[1e-5, 0.], [0., 1e-5]])  # covariance of state transition; small value means deterministic
+T = 100  # horizon
 
-Q_inv = jnp.linalg.inv(jnp.array([[10., 0.], [0., 10.]]))  # covariance of state prior
-R_inv = jnp.linalg.inv(jnp.array([[1.0]]))  # covariance of action prior
-
-cov_dyn = jnp.array([1e-10]*dim_x)  # covariance of dynamics
-X0 = jnp.array([5., 5.])  # initial state
-Xg = jnp.array([10., 10.])  # goal state
-ug = jnp.array([0.])  # goal action
-T = 60  # horizon
-
-# ============================ build factor graphs ==========================
 state_variables = [RealVectorVariable[dim_x]() for _ in range(T)]
 action_variables = [RealVectorVariable[dim_u]() for _ in range(T)]
 
@@ -33,22 +29,21 @@ action_state_factors: List[jaxfg.core.FactorBase] = \
     [GeneralFactorAS.make(X0,
                           action_variables[0],
                           state_variables[0],
-                          LQREnv.lqr_simple_watson,
-                          jaxfg.noises.DiagonalGaussian.make_from_covariance(cov_dyn))
-     ]
+                          pendulum_dynamics,
+                          jaxfg.noises.Gaussian.make_from_covariance(cov_dyn))]
 
 state_action_state_factors: List[jaxfg.core.FactorBase] = \
     [GeneralFactorSAS.make(state_variables[i],
                            action_variables[i+1],
                            state_variables[i+1],
-                           LQREnv.lqr_simple_watson,
-                           jaxfg.noises.DiagonalGaussian.make_from_covariance(cov_dyn))
+                           pendulum_dynamics,
+                           jaxfg.noises.Gaussian.make_from_covariance(cov_dyn))
      for i in range(T-1)]
 
 state_prior_factors: List[jaxfg.core.FactorBase] = \
-    [PriorFactor.make(state_variables[i],
-                      Xg,
-                      jaxfg.noises.Gaussian.make_from_covariance(Q_inv))
+    [TransformedPriorFactor.make(state_variables[i],
+                                 Xag,
+                                 jaxfg.noises.Gaussian.make_from_covariance(Q_inv))
      for i in range(T)]
 
 action_prior_factors: List[jaxfg.core.FactorBase] = \
@@ -64,18 +59,20 @@ factors: List[jaxfg.core.FactorBase] = action_state_factors \
 
 state_action_variables = state_variables + action_variables
 
+# import ipdb; ipdb.set_trace()
 graph = jaxfg.core.StackedFactorGraph.make(factors)
 initial_assignments = jaxfg.core.VariableAssignments.make_from_defaults(state_action_variables)
+
 print("Initial assignments:")
 print(initial_assignments)
 
 # Solve. Note that the first call to solve() will be much slower than subsequent calls.
 with jaxfg.utils.stopwatch("First solve (slower because of JIT compilation)"):
-    solution_assignments = graph.solve(initial_assignments)#, solver=LevenbergMarquardtSolver())
+    solution_assignments = graph.solve(initial_assignments, solver=LevenbergMarquardtSolver())
     solution_assignments.storage.block_until_ready()  # type: ignore
 
 with jaxfg.utils.stopwatch("Solve after initial compilation"):
-    solution_assignments = graph.solve(initial_assignments)#, solver=LevenbergMarquardtSolver())
+    solution_assignments = graph.solve(initial_assignments, solver=LevenbergMarquardtSolver())
     solution_assignments.storage.block_until_ready()  # type: ignore
 
 # Print all solved variable values.
@@ -84,18 +81,29 @@ print(solution_assignments)
 print()
 # import ipdb;ipdb.set_trace()
 
+
 # ======================== below is for visualization ==============================
 us = [solution_assignments.get_value(action_variables[i]) for i in range(T)]
+
 xs1 = [solution_assignments.get_value(state_variables[i])[0] for i in range(T)]
 xs2 = [solution_assignments.get_value(state_variables[i])[1] for i in range(T)]
-xs1 = [X0[0]] + xs1
+xs = [X0] + [solution_assignments.get_value(state_variables[i]) for i in range(T)]
+
+xs1 = [X0[0]] + xs1  # append the initial location at the beginning of the list
 xs2 = [X0[1]] + xs2
-us = us + [0]
+us = us + [0]  # append the last action at the end of the list
 
+# below is for get the trajectories under the true dynamics.
+true_xs = [X0]  # append the first location
+for i in range(T):
+    x_prev = true_xs[-1]
+    next_x = pendulum_dynamics(x_prev, us[i])
+    true_xs.append(next_x)
+
+true_xs1 = [_[0] for _ in true_xs]
+true_xs2 = [_[1] for _ in true_xs]
 ts = list(range(T+1))
-LQRVisWatson.init_plot()
-LQRVisWatson.plot_trajectory(xs1, xs2, us, T+1, save_path='assets/lqr_watson20.png')
 
-
-
+PendulumVis.init_plot()
+PendulumVis.plot_trajectory(xs1, xs2, true_xs1, true_xs2, us, T+1, save_path='assets/pendulum_watson20.png')
 

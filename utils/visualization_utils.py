@@ -10,7 +10,7 @@ class PendulumVis:
     def init_plot():
         PLOT_TIKZ = True
         matplotlib.rcParams["font.family"] = "Times New Roman"
-        matplotlib.rcParams["figure.figsize"] = [15, 10]
+        matplotlib.rcParams["figure.figsize"] = [25, 10]
         matplotlib.rcParams["legend.fontsize"] = 16
         matplotlib.rcParams["axes.titlesize"] = 22
         matplotlib.rcParams["figure.titlesize"] = 22
@@ -21,7 +21,7 @@ class PendulumVis:
         f, a = plt.subplots(3, 2)
         t = range(T)
 
-        ymax = jnp.pi/8
+        # ymax = jnp.pi/8
 
         a[0, 0].set_title('Predicted/optimized trajectories')
         a[0, 0].set_ylabel("$\\theta$")
@@ -34,9 +34,9 @@ class PendulumVis:
         a[0, 0].hlines(y=0, xmin=0, xmax=T, linewidth=2, color='r', linestyle='dashed')
         a[1, 0].hlines(y=0, xmin=0, xmax=T, linewidth=2, color='r',linestyle='dashed')
         a[2, 0].hlines(y=0., xmin=0, xmax=T, linewidth=2, color='r',linestyle='dashed')
-        a[0, 0].set_ylim(-ymax, ymax)
-        a[1, 0].set_ylim(-ymax, ymax)
-        a[2, 0].set_ylim(-3, 3)
+        # a[0, 0].set_ylim(-ymax, ymax)
+        # a[1, 0].set_ylim(-ymax, ymax)
+        # a[2, 0].set_ylim(-3, 3)
 
         a[0, 1].set_title('Trajectory under true dynamics')
         a[0, 1].set_ylabel("$\\theta$")
@@ -50,9 +50,67 @@ class PendulumVis:
         a[1, 1].hlines(y=0, xmin=0, xmax=T, linewidth=2, color='r', linestyle='dashed')
         a[2, 1].hlines(y=0., xmin=0, xmax=T, linewidth=2, color='r', linestyle='dashed')
 
-        a[0, 1].set_ylim(-ymax, ymax)
-        a[1, 1].set_ylim(-ymax, ymax)
-        a[2, 1].set_ylim(-3, 3)
+        # a[0, 1].set_ylim(-ymax, ymax)
+        # a[1, 1].set_ylim(-ymax, ymax)
+        # a[2, 1].set_ylim(-3, 3)
+
+        f.suptitle('Pendulum Horizon = %d' % (T-1))
+
+        if save_path is not None:
+            plt.savefig(save_path)
+        else:
+            plt.show()
+
+
+class PendulumMPCVis:
+
+    @staticmethod
+    def init_plot():
+        PLOT_TIKZ = True
+        matplotlib.rcParams["font.family"] = "Times New Roman"
+        matplotlib.rcParams["figure.figsize"] = [15, 10]
+        matplotlib.rcParams["legend.fontsize"] = 16
+        matplotlib.rcParams["axes.titlesize"] = 22
+        matplotlib.rcParams["figure.titlesize"] = 22
+        matplotlib.rcParams["axes.labelsize"] = 22
+
+    @staticmethod
+    def plot_trajectory(true_x1, true_x2, u, T, save_path=None):
+        f, a = plt.subplots(3, 1)
+        t = range(T)
+
+        ymax = jnp.pi
+
+        # a[0, 0].set_title('Predicted/optimized trajectories')
+        # a[0, 0].set_ylabel("$\\theta$")
+        # a[1, 0].set_ylabel("$\dot{\\theta}$")
+        # a[2, 0].set_ylabel("$Nm$")
+        # a[2, 0].set_xlabel("$t$")
+        # a[0, 0].plot(t, x1, "b+-")
+        # a[1, 0].plot(t, x2, "b+-")
+        # a[2, 0].plot(t, u, "b+-")
+        # a[0, 0].hlines(y=0, xmin=0, xmax=T, linewidth=2, color='r', linestyle='dashed')
+        # a[1, 0].hlines(y=0, xmin=0, xmax=T, linewidth=2, color='r',linestyle='dashed')
+        # a[2, 0].hlines(y=0., xmin=0, xmax=T, linewidth=2, color='r',linestyle='dashed')
+        # a[0, 0].set_ylim(-ymax, ymax)
+        # a[1, 0].set_ylim(-ymax, ymax)
+        # a[2, 0].set_ylim(-3, 3)
+
+        a[0].set_title('Trajectory under true dynamics')
+        a[0].set_ylabel("$\\theta$")
+        a[1].set_ylabel("$\dot{\\theta}$")
+        a[2].set_ylabel("$Nm$")
+        a[2].set_xlabel("$t$")
+        a[0].plot(t, true_x1, "b+-")
+        a[1].plot(t, true_x2, "b+-")
+        a[2].plot(t, u, "b+-")
+        a[0].hlines(y=0, xmin=0, xmax=T, linewidth=2, color='r', linestyle='dashed')
+        a[1].hlines(y=0, xmin=0, xmax=T, linewidth=2, color='r', linestyle='dashed')
+        a[2].hlines(y=0., xmin=0, xmax=T, linewidth=2, color='r', linestyle='dashed')
+
+        # a[0].set_ylim(-ymax, ymax)
+        # a[1].set_ylim(-ymax, ymax)
+        # a[2].set_ylim(-5, 5)
 
         f.suptitle('Pendulum Horizon = %d' % (T-1))
 
