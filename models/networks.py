@@ -7,12 +7,17 @@ import flax.linen as nn
 
 class MLP(nn.Module):
   features: Sequence[int]
-  activation: nn.Module = nn.relu
+  activation: str
 
   @nn.compact
   def __call__(self, x):
     for feat in self.features[:-1]:
-      x = self.activation(nn.Dense(feat)(x))
+      if self.activation == 'relu':
+        x = nn.relu(nn.Dense(feat)(x))
+      elif self.activation == 'swish':
+        x = nn.swish(nn.Dense(feat)(x))
+      else:
+        raise NotImplementedError
     x = nn.Dense(self.features[-1])(x)
     return x
 
