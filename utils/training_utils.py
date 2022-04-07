@@ -2,6 +2,7 @@ from absl import logging
 from flax import linen as nn
 from flax.metrics import tensorboard
 from flax.training import train_state
+from flax.training import checkpoints
 from models.networks import MLP
 import jax
 import jax.numpy as jnp
@@ -103,6 +104,18 @@ def train_and_evaluate(config: ml_collections.ConfigDict,
 
     summary_writer.scalar('train_loss', train_loss, epoch)
     summary_writer.scalar('test_loss', test_loss, epoch)
-
+  save_checkpoint(config.state, workdir)
   summary_writer.flush()
   return state
+
+
+def restore_checkpoint(state, workdir):
+  return checkpoints.restore_checkpoint(workdir, state)
+
+
+def save_checkpoint(state, workdir):
+  if jax.process_index() == 0:
+    # get train state from the first replica
+    state = jax.device_get(jax.tree_map(lambda x: x[0], state))
+    step = int(state.step)
+    checkpoints.save_checkpoint(workdir, state, step, keep=3)

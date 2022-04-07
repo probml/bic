@@ -1,17 +1,22 @@
-import sys
+import jax
+import jaxfg
 import os.path as osp
+import sys
 sys.path.append(osp.dirname(osp.dirname(osp.dirname(osp.abspath(__file__)))))
 
 from control import PriorFactor, TransformedPriorFactor, GeneralFactorSAS, GeneralFactorAS, BoundedRealVectorVariable
-import jax
-from jax import random
-from jax import numpy as jnp
-import jaxfg
-from jaxfg.solvers import LevenbergMarquardtSolver
+# from environments.pendulum import pendulum_dynamics
 from jaxfg.core import RealVectorVariable
-from environments.pendulum import pendulum_dynamics
+from jax import numpy as jnp
+from jax import random
+from jaxfg.solvers import LevenbergMarquardtSolver
+from learning.configs.default import get_config
+from models.networks import MLP
 from typing import List
+from utils.training_utils import restore_checkpoint, create_train_state
 from utils.visualization_utils import PendulumMPCVis
+
+
 
 H = 50  # how many steps we will lookahead when planning; planning_horizon
 
@@ -25,12 +30,25 @@ cov_dyn = jnp.array([[1e-6, 0.], [0., 1e-6]])  # covariance of state transition;
 T = 100  # horizon
 max_u = 2
 min_u = -2
-
 key = random.PRNGKey(42)
-
-
 state_variables = [RealVectorVariable[dim_x]() for _ in range(H)]
 action_variables = [BoundedRealVectorVariable(min_u, max_u)[dim_u]() for _ in range(H)]
+
+# params = jnp.load('data/pendulum_determinstic_NN_state.npy')
+config = get_config()
+workdir = 'data'
+rng = jax.random.PRNGKey(0)
+state = create_train_state(rng, config)
+state = restore_checkpoint(state, workdir)
+
+import ipdb; ipdb.set_trace()
+
+def pendulum_dynamics(state, action):
+    if len(state.shape) == 1:
+        assert len(state.shape) == len(action.shape)
+        state = jnp.reshape(state, (1, -1))
+        action = jnp.reshape(action, (1, -1))
+    return MLP([128, 64, 20, 2]).apply({'params': params}, jnp.concatenate([state, action], 1))
 
 action_state_factors: List[jaxfg.core.FactorBase] = \
     [GeneralFactorAS.make(X0,
@@ -69,16 +87,9 @@ state_action_variables = state_variables + action_variables
 
 # import ipdb; ipdb.set_trace()
 graph = jaxfg.core.StackedFactorGraph.make(factors)
-# import ipdb; ipdb.set_trace()
-# graph.factor_stacks[0].factor.initial_state[:] = X0
-# import ipdb; ipdb.set_trace()
 initial_assignments = jaxfg.core.VariableAssignments.make_from_defaults(state_action_variables)
 print("Initial assignments:")
 print(initial_assignments)
-
-# t = 0
-# initial_assignments = jaxfg.core.VariableAssignments.make_from_defaults(state_action_variables)
-# initial_assignments.set_value(state_variables[t], X0)
 
 # Solve. Note that the first call to solve() will be much slower than subsequent calls.
 with jaxfg.utils.stopwatch("First solve (slower because of JIT compilation)"):
