@@ -16,7 +16,7 @@ from typing import List
 from utils.training_utils import restore_checkpoint, create_train_state
 from utils.visualization_utils import PendulumMPCVis
 
-H = 10  # how many steps we will lookahead when planning; planning_horizon
+H = 20  # how many steps we will lookahead when planning; planning_horizon
 
 dim_x = 2
 dim_u = 1
@@ -34,7 +34,7 @@ action_variables = [BoundedRealVectorVariable(min_u, max_u)[dim_u]() for _ in ra
 
 # params = jnp.load('data/pendulum_determinstic_NN_state.npy')
 config = get_config()
-workdir = 'data/checkpoint_62500'
+workdir = 'data/checkpoint_1000' #'data/checkpoint_62500'
 rng = jax.random.PRNGKey(0)
 ckpt = create_train_state(rng, config)
 ckpt = restore_checkpoint(ckpt, workdir)

@@ -16,7 +16,7 @@ if __name__ == '__main__':
     x0 = jnp.array([jnp.pi, 0.])
     u0 = jnp.array([0])
 
-    n_data = 20000  # 10 thousands
+    n_data = 200  # 10 thousands
 
     x_max, x_min = 2 * jnp.pi, -2 * jnp.pi
     u_max, u_min = 5, -5
